@@ -1,0 +1,7 @@
+[app]
+name = "Agnel"
+id = "dev.agnel.reader"
+version = "0.1.0"
+executable = "agnel"
+package = "."
+icon = "assets/icon.png"

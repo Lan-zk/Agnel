@@ -1,0 +1,62 @@
+[
+  {
+    "seed": "WE4cqn07pa7Odmdg93kh13ABdIpaEZrOVRgYVjcV9mwDir8D8GUp16LqW9ZmoSgfeEBpq44UWI0xNszOkGiZISNiir7OQI42",
+    "seedLength": 96,
+    "stats": {
+      "uniqueRatio": 0.479,
+      "vowelRatio": 0.289,
+      "digitRatio": 0.208,
+      "upperRatio": 0.487,
+      "longestRun": 2,
+      "digitSum": 96,
+      "codeSum": 8156
+    },
+    "palette": {
+      "groundId": "slate-day",
+      "mode": "light",
+      "base": "#dde2e6",
+      "surface": "#eef1f4",
+      "ink": "#14181c",
+      "groundDesc": "冷灰蓝纸面，偏工作台",
+      "accentHue": 176.0,
+      "accent": "hsl(176 59% 25%)",
+      "accentSoft": "hsl(176 40% 93%)",
+      "accentInk": "hsl(176 59% 18%)",
+      "accentFill": "hsl(176 59% 25%)",
+      "onAccent": "#ffffff",
+      "secondary": "hsl(352 34% 25%)",
+      "rule": "hsl(176 12% 82%)"
+    },
+    "layout": {
+      "id": "sidebar-rail",
+      "name": "图标轨 + 内容台",
+      "note": "极窄竖轨只放模块切换，主区像一张摊开的书页，占满可用宽度。",
+      "grid": "64px 1fr",
+      "reading": "主区宽排，正文块居中"
+    },
+    "typeface": {
+      "id": "grot-text",
+      "name": "中性 grotesque + 书籍衬线",
+      "display": "'Didot', 'Bodoni 72', 'Georgia', serif",
+      "ui": "'Helvetica Neue', 'Inter', system-ui, sans-serif",
+      "read": "'Charter', 'Bitstream Charter', 'Sitka Text', Cambria, serif",
+      "mono": "'Menlo', monospace",
+      "note": "界面用中性 grotesque 保持克制；阅读用屏幕衬线，弱化装饰、突出词形。"
+    },
+    "shape": {
+      "radius": 11,
+      "density": "balanced",
+      "leading": 1.7,
+      "measureCh": 72,
+      "scale": 1.226,
+      "borderStyle": "solid"
+    },
+    "motion": {
+      "id": "quick-crisp",
+      "name": "短促线性",
+      "desc": "120–180ms，无回弹"
+    },
+    "index": 5,
+    "slug": "05-sidebar-rail-grot-text"
+  }
+]

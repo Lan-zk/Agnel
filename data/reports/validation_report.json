@@ -1,0 +1,507 @@
+{
+  "generated_at": "2026-11-08T14:53:47Z",
+  "database": "data/db/bible-en-study.db",
+  "database_bytes": 33443840,
+  "checks": [
+    {
+      "section": "A",
+      "name": "PRAGMA integrity_check（库完整性）",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "section": "A",
+      "name": "PRAGMA foreign_key_check（外键）",
+      "ok": true,
+      "detail": "无违反"
+    },
+    {
+      "section": "A",
+      "name": "核心表齐全",
+      "ok": true,
+      "detail": "7 张表全部存在"
+    },
+    {
+      "section": "A",
+      "name": "视图齐全",
+      "ok": true,
+      "detail": "v_verse, v_verse_parallel"
+    },
+    {
+      "section": "A",
+      "name": "verses 行数与 translations 表声明一致",
+      "ok": true,
+      "detail": "124399 行 / 声明 124399 行"
+    },
+    {
+      "section": "A",
+      "name": "全文索引覆盖每一节",
+      "ok": true,
+      "detail": "已索引 124399 / 共 124399 节"
+    },
+    {
+      "section": "A",
+      "name": "dataset_meta 已写入",
+      "ok": true,
+      "detail": "{'schema_version': '1.0', 'built_at': '2026-11-06T14:09:02Z', 'generator': 'scripts/build_database.py', 'canon': '66 books, 1189 chapters', 'translation_ids': 'BSB,WEBP,KJV,CUV', 'verse_identity': '(translation_id, book_id, chapter, verse); never a line number'}"
+    },
+    {
+      "section": "B",
+      "name": "BSB：66 卷齐全",
+      "ok": true,
+      "detail": "共 66 卷"
+    },
+    {
+      "section": "B",
+      "name": "BSB：卷序与各卷章数符合正典",
+      "ok": true,
+      "detail": "book_id 1..66 按正典顺序，各卷章数与公认正典一致"
+    },
+    {
+      "section": "B",
+      "name": "BSB：共 1189 章",
+      "ok": true,
+      "detail": "1189 章（旧约 929 + 新约 260）"
+    },
+    {
+      "section": "B",
+      "name": "BSB：各卷章数",
+      "ok": true,
+      "detail": "66 卷的章数全部与正典一致"
+    },
+    {
+      "section": "B",
+      "name": "CUV：66 卷齐全",
+      "ok": true,
+      "detail": "共 66 卷"
+    },
+    {
+      "section": "B",
+      "name": "CUV：卷序与各卷章数符合正典",
+      "ok": true,
+      "detail": "book_id 1..66 按正典顺序，各卷章数与公认正典一致"
+    },
+    {
+      "section": "B",
+      "name": "CUV：共 1189 章",
+      "ok": true,
+      "detail": "1189 章（旧约 929 + 新约 260）"
+    },
+    {
+      "section": "B",
+      "name": "CUV：各卷章数",
+      "ok": true,
+      "detail": "66 卷的章数全部与正典一致"
+    },
+    {
+      "section": "B",
+      "name": "KJV：66 卷齐全",
+      "ok": true,
+      "detail": "共 66 卷"
+    },
+    {
+      "section": "B",
+      "name": "KJV：卷序与各卷章数符合正典",
+      "ok": true,
+      "detail": "book_id 1..66 按正典顺序，各卷章数与公认正典一致"
+    },
+    {
+      "section": "B",
+      "name": "KJV：共 1189 章",
+      "ok": true,
+      "detail": "1189 章（旧约 929 + 新约 260）"
+    },
+    {
+      "section": "B",
+      "name": "KJV：各卷章数",
+      "ok": true,
+      "detail": "66 卷的章数全部与正典一致"
+    },
+    {
+      "section": "B",
+      "name": "WEBP：66 卷齐全",
+      "ok": true,
+      "detail": "共 66 卷"
+    },
+    {
+      "section": "B",
+      "name": "WEBP：卷序与各卷章数符合正典",
+      "ok": true,
+      "detail": "book_id 1..66 按正典顺序，各卷章数与公认正典一致"
+    },
+    {
+      "section": "B",
+      "name": "WEBP：共 1189 章",
+      "ok": true,
+      "detail": "1189 章（旧约 929 + 新约 260）"
+    },
+    {
+      "section": "B",
+      "name": "WEBP：各卷章数",
+      "ok": true,
+      "detail": "66 卷的章数全部与正典一致"
+    },
+    {
+      "section": "C",
+      "name": "BSB：每章节号 1..N 连续无缺口",
+      "ok": true,
+      "detail": "共 1189 章，首节为 1"
+    },
+    {
+      "section": "C",
+      "name": "BSB：无重复经节",
+      "ok": true,
+      "detail": "唯一索引生效"
+    },
+    {
+      "section": "C",
+      "name": "BSB：空经节已核对",
+      "ok": true,
+      "detail": "空 16 节，声明 16 节：MAT 17:21, MAT 18:11, MAT 23:14, MRK 7:16, MRK 9:44, MRK 9:46, MRK 11:26, MRK 15:28, LUK 17:36, LUK 23:17, JHN 5:4, ACT 8:37, ACT 15:34, ACT 24:7, ACT 28:29, ROM 16:24"
+    },
+    {
+      "section": "C",
+      "name": "CUV：每章节号 1..N 连续无缺口",
+      "ok": true,
+      "detail": "共 1189 章，首节为 1；11 个节号本版不编号（出版社导出同样没有）：MAT 18:11、MAT 23:14、MRK 7:16、MRK 15:28、LUK 17:36、LUK 23:17、JHN 5:4、ACT 8:37、ACT 15:34、ACT 24:7、ACT 28:29"
+    },
+    {
+      "section": "C",
+      "name": "CUV：无重复经节",
+      "ok": true,
+      "detail": "唯一索引生效"
+    },
+    {
+      "section": "C",
+      "name": "CUV：空经节已核对",
+      "ok": true,
+      "detail": "空 71 节，声明 71 节：GEN 24:30, EXO 38:15, LEV 3:15, NUM 1:21, NUM 1:23, NUM 1:25, NUM 1:27, NUM 1:29, NUM 1:31, NUM 1:33, NUM 1:35, NUM 1:37, NUM 1:39, NUM 1:41, NUM 1:43, NUM 1:46, NUM 4:40, NUM 4:44, NUM 4:48, DEU 4:33, DEU 13:13, DEU 13:18, DEU 15:5, DEU 28:14, DEU 28:59, DEU 29:11, DEU 30:10, JOS 3:11, JOS 21:10, JDG 20:28, 1SA 25:31, 2SA 3:10, 1CH 4:18, 1CH 16:13, 1CH 16:40, 2CH 30:19, NEH 12:29, EST 1:14, EST 8:12, JOB 10:21, JOB 38:38, JOB 38:40, PSA 8:7, PSA 8:8, PSA 49:9, PSA 63:6, PSA 76:9, PSA 92:3, PSA 105:6, PSA 116:19, PSA 135:2, PRO 23:32, PRO 26:19, ECC 7:28, ISA 4:4, ISA 65:7, JER 34:9, JER 34:19, JER 43:6, EZK 16:57, EZK 18:11, EZK 39:27, HOS 12:5, ZEP 2:2, LUK 1:2, LUK 2:35, LUK 21:30, ACT 1:25, ACT 4:30, EPH 6:3, COL 2:21"
+    },
+    {
+      "section": "C",
+      "name": "KJV：每章节号 1..N 连续无缺口",
+      "ok": true,
+      "detail": "共 1189 章，首节为 1"
+    },
+    {
+      "section": "C",
+      "name": "KJV：无重复经节",
+      "ok": true,
+      "detail": "唯一索引生效"
+    },
+    {
+      "section": "C",
+      "name": "KJV：空经节已核对",
+      "ok": true,
+      "detail": "空 0 节，声明 0 节"
+    },
+    {
+      "section": "C",
+      "name": "WEBP：每章节号 1..N 连续无缺口",
+      "ok": true,
+      "detail": "共 1189 章，首节为 1"
+    },
+    {
+      "section": "C",
+      "name": "WEBP：无重复经节",
+      "ok": true,
+      "detail": "唯一索引生效"
+    },
+    {
+      "section": "C",
+      "name": "WEBP：空经节已核对",
+      "ok": true,
+      "detail": "空 5 节，声明 5 节：LUK 17:36, ACT 8:37, ACT 15:34, ACT 24:7, ROM 16:25"
+    },
+    {
+      "section": "D",
+      "name": "BSB：无 USFM 标记、脚注残留或空白缺陷",
+      "ok": true,
+      "detail": "扫描 31102 节，全部干净"
+    },
+    {
+      "section": "D",
+      "name": "BSB：文本为 NFC 规范化",
+      "ok": true,
+      "detail": "全部符合 NFC"
+    },
+    {
+      "section": "D",
+      "name": "CUV：无 USFM 标记、脚注残留或空白缺陷",
+      "ok": true,
+      "detail": "扫描 31092 节，全部干净"
+    },
+    {
+      "section": "D",
+      "name": "CUV：文本为 NFC 规范化",
+      "ok": true,
+      "detail": "全部符合 NFC"
+    },
+    {
+      "section": "D",
+      "name": "KJV：无 USFM 标记、脚注残留或空白缺陷",
+      "ok": true,
+      "detail": "扫描 31102 节，全部干净"
+    },
+    {
+      "section": "D",
+      "name": "KJV：文本为 NFC 规范化",
+      "ok": true,
+      "detail": "全部符合 NFC"
+    },
+    {
+      "section": "D",
+      "name": "WEBP：无 USFM 标记、脚注残留或空白缺陷",
+      "ok": true,
+      "detail": "扫描 31103 节，全部干净"
+    },
+    {
+      "section": "D",
+      "name": "WEBP：文本为 NFC 规范化",
+      "ok": true,
+      "detail": "全部符合 NFC"
+    },
+    {
+      "section": "E",
+      "name": "BSB：来源字段完整",
+      "ok": true,
+      "detail": "Berean Standard Bible | Updated to the 3rd printing (USFM export) | https://bereanbible.com/bsb_usfm.zip | 2026-11-06T12:34:30Z"
+    },
+    {
+      "section": "E",
+      "name": "BSB：sha256 与下载的压缩包一致",
+      "ok": true,
+      "detail": "f0c56438eb89c98e...（bsb_usfm.zip）"
+    },
+    {
+      "section": "E",
+      "name": "CUV：来源字段完整",
+      "ok": true,
+      "detail": "Chinese Union Version (simplified) | 新标点和合本 (Chinese Union New Punctuation), eBible.org text of 2021-10-15 | https://eBible.org/Scriptures/cmn-cu89s_usfm.zip | 2026-11-06T14:06:32Z"
+    },
+    {
+      "section": "E",
+      "name": "CUV：sha256 与下载的压缩包一致",
+      "ok": true,
+      "detail": "496f17f4daa62ab1...（cmn-cu89s_usfm.zip）"
+    },
+    {
+      "section": "E",
+      "name": "KJV：来源字段完整",
+      "ok": true,
+      "detail": "King James Version | 1769 standardised text (eng-kjv2006) | https://eBible.org/Scriptures/eng-kjv2006_usfm.zip | 2026-11-06T12:53:37Z"
+    },
+    {
+      "section": "E",
+      "name": "KJV：sha256 与下载的压缩包一致",
+      "ok": true,
+      "detail": "069646cd8722f6d5...（eng-kjv2006_usfm.zip）"
+    },
+    {
+      "section": "E",
+      "name": "WEBP：来源字段完整",
+      "ok": true,
+      "detail": "World English Bible, Protestant Edition | 2020 stable text edition | https://eBible.org/Scriptures/engwebp_usfm.zip | 2026-11-06T12:34:40Z"
+    },
+    {
+      "section": "E",
+      "name": "WEBP：sha256 与下载的压缩包一致",
+      "ok": true,
+      "detail": "a93df5571009fed5...（engwebp_usfm.zip）"
+    },
+    {
+      "section": "F",
+      "name": "各译本共有的经节",
+      "ok": true,
+      "detail": "31107 处经节中有 31088 处 4 个译本都有"
+    },
+    {
+      "section": "F",
+      "name": "BSB：其他译本没有的经节",
+      "ok": true,
+      "detail": "0 处：无"
+    },
+    {
+      "section": "F",
+      "name": "CUV：其他译本没有的经节",
+      "ok": true,
+      "detail": "2 处：3JN 1:15, REV 12:18"
+    },
+    {
+      "section": "F",
+      "name": "KJV：其他译本没有的经节",
+      "ok": true,
+      "detail": "0 处：无"
+    },
+    {
+      "section": "F",
+      "name": "WEBP：其他译本没有的经节",
+      "ok": true,
+      "detail": "3 处：ROM 14:24, ROM 14:25, ROM 14:26"
+    },
+    {
+      "section": "F",
+      "name": "BSB：本版不编号的经节与记录一致",
+      "ok": true,
+      "detail": "5 处：3JN 1:15、REV 12:18 等版本差异"
+    },
+    {
+      "section": "F",
+      "name": "CUV：本版不编号的经节与记录一致",
+      "ok": true,
+      "detail": "15 处：3JN 1:15、REV 12:18 等版本差异"
+    },
+    {
+      "section": "F",
+      "name": "KJV：本版不编号的经节与记录一致",
+      "ok": true,
+      "detail": "5 处：3JN 1:15、REV 12:18 等版本差异"
+    },
+    {
+      "section": "F",
+      "name": "WEBP：本版不编号的经节与记录一致",
+      "ok": true,
+      "detail": "4 处：3JN 1:15、REV 12:18 等版本差异"
+    },
+    {
+      "section": "F",
+      "name": "罗马书颂赞的节号与出版社一致",
+      "ok": true,
+      "detail": "WEBP 有 14:24-26，KJV 第 14 章到 23 节为止，颂赞在 16:25-27"
+    },
+    {
+      "section": "F",
+      "name": "章节数差异只出现在已记录的版本差异处",
+      "ok": true,
+      "detail": "John 第 7 章 → BSB:53 CUV:52 KJV:53 WEBP:53；Rom 第 14 章 → BSB:23 CUV:23 KJV:23 WEBP:26；Rom 第 16 章 → BSB:27 CUV:27 KJV:27 WEBP:25；3John 第 1 章 → BSB:14 CUV:15 KJV:14 WEBP:14；Rev 第 12 章 → BSB:17 CUV:18 KJV:17 WEBP:17"
+    },
+    {
+      "section": "F",
+      "name": "已知版本差异已逐条说明",
+      "ok": true,
+      "detail": "3John 1：和合本把英文版的第 14 节拆为 14、15 两节；John 7：和合本不编号 7:53，其内容并入 8:1「于是各人都回家去了」；Rev 12：和合本把英文版 13:1 的首句「那时龙就站在海边的沙上」编为 12:18；Rom 14：WEBP 把颂赞编为 14:24-26，BSB/KJV/CUV 编为 16:25-27；Rom 16：WEBP 的罗马书 16 章止于第 25 节，颂赞不在本章"
+    },
+    {
+      "section": "F",
+      "name": "没有为对齐其他译本而重新编号",
+      "ok": true,
+      "detail": "Rom 16:27 只出现在 BSB、CUV、KJV"
+    },
+    {
+      "section": "G",
+      "name": "BSB：每一节都与出版社纯文本导出一致",
+      "ok": true,
+      "detail": "29846 节完全相同，1256 节仅标点/空白间距不同，0 节因导出把诗篇题注或 119 篇字母并入经节而不同，0 节无法解释"
+    },
+    {
+      "section": "G",
+      "name": "BSB：没有经节在纯文本导出中缺失",
+      "ok": true,
+      "detail": "无缺失"
+    },
+    {
+      "section": "G",
+      "name": "CUV：每一节都与出版社纯文本导出一致",
+      "ok": true,
+      "detail": "27962 节完全相同，2943 节仅标点/空白间距不同，116 节因导出把诗篇题注或 119 篇字母并入经节而不同，0 节无法解释"
+    },
+    {
+      "section": "G",
+      "name": "CUV：没有经节在纯文本导出中缺失",
+      "ok": true,
+      "detail": "无缺失；71 个合并编号的空节不在导出中"
+    },
+    {
+      "section": "G",
+      "name": "KJV：每一节都与出版社纯文本导出一致",
+      "ok": true,
+      "detail": "15200 节完全相同，15786 节仅标点/空白间距不同，116 节因导出把诗篇题注或 119 篇字母并入经节而不同，0 节无法解释"
+    },
+    {
+      "section": "G",
+      "name": "KJV：没有经节在纯文本导出中缺失",
+      "ok": true,
+      "detail": "无缺失"
+    },
+    {
+      "section": "G",
+      "name": "WEBP：每一节都与出版社纯文本导出一致",
+      "ok": true,
+      "detail": "30961 节完全相同，4 节仅标点/空白间距不同，138 节因导出把诗篇题注或 119 篇字母并入经节而不同，0 节无法解释"
+    },
+    {
+      "section": "G",
+      "name": "WEBP：没有经节在纯文本导出中缺失",
+      "ok": true,
+      "detail": "无缺失"
+    },
+    {
+      "section": "H",
+      "name": "抽样经节与出版社导出一致",
+      "ok": true,
+      "detail": "12 处固定名节 + 8 处随机节 × 4 个译本，逐字比对"
+    },
+    {
+      "section": "I",
+      "name": "查询：按译本+卷+章+节取一节",
+      "ok": true,
+      "detail": "John 3:16 BSB → For God so loved the world that He gave His one and only …"
+    },
+    {
+      "section": "I",
+      "name": "查询：整章列出（按节号排序）",
+      "ok": true,
+      "detail": "诗篇 23 篇 KJV → 6 节，第 1 节为 'The LORD is my shepherd; I shal…'"
+    },
+    {
+      "section": "I",
+      "name": "查询：章内节号范围",
+      "ok": true,
+      "detail": "罗马书 14 章 WEBP → 第 1..26 节"
+    },
+    {
+      "section": "I",
+      "name": "查询：某译本的书卷数",
+      "ok": true,
+      "detail": "WEBP → 66 卷"
+    },
+    {
+      "section": "I",
+      "name": "查询：某章的标题条数",
+      "ok": true,
+      "detail": "诗篇 119 篇 BSB → 45 条标题（类型示例 acrostic）"
+    },
+    {
+      "section": "I",
+      "name": "查询：三译本经文对照视图",
+      "ok": true,
+      "detail": "John 3:16 → 3 列中有 3 列非空"
+    },
+    {
+      "section": "I",
+      "name": "查询：对照视图：经节归属不足三译本",
+      "ok": true,
+      "detail": "罗马书 14 章 → 3 处经节不足三个译本收录"
+    },
+    {
+      "section": "I",
+      "name": "查询：全文检索",
+      "ok": true,
+      "detail": "160 节含 shepherd"
+    },
+    {
+      "section": "I",
+      "name": "查询：全文检索 + 联接过滤",
+      "ok": true,
+      "detail": "2 个译本含短语 still waters"
+    },
+    {
+      "section": "I",
+      "name": "查询：译本授权与下载日期",
+      "ok": true,
+      "detail": "BSB Public Domain（2026-11-06）；CUV Public Domain（2026-11-06）；KJV Public Domain（2026-11-06）；WEBP Public Domain（2026-11-06）"
+    }
+  ],
+  "passed": 83,
+  "failed": 0
+}

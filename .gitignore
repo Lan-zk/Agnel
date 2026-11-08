@@ -1,0 +1,22 @@
+.DS_Store
+.impeccable/
+.shots/
+
+# Build products
+app/build/
+app/shot
+
+# Reference checkouts: third-party projects, not part of this repo
+refer/
+
+# Raw downloads and generated Bible database inputs
+data/raw/
+
+# Dictionary build inputs that are too large or third-party archives.
+# Keep the script, docs, notice and the small ACAI name map.
+data/lex/*.gz
+data/lex/*.tgz
+data/lex/*.dict
+data/lex/*.js
+data/lex/*.txt
+data/lex/package/
