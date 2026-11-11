@@ -4,7 +4,8 @@
 //
 //	go run -tags vivahead ./cmd/shot /tmp/a.png "label:英文" "shot:/tmp/b.png" "locate:created" "shot:/tmp/c.png"
 //
-// Steps: click:X,Y  label:文字  locate:文字  keys:spec  wait:ms  shot:path
+// Steps: click:X,Y  label:文字  locate:文字  type:text
+// size:w,h  keys:spec  wait:ms  shot:path
 package main
 
 import (
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/vivaui/viva/headless"
+	"github.com/vivaui/viva/ui"
 
 	"app/internal/desk"
 	"app/internal/store"
@@ -69,6 +71,20 @@ func main() {
 			if err := session.Click(b.X+b.Width/2, b.Y+b.Height/2); err != nil {
 				log.Fatal(err)
 			}
+		case "size":
+			w, h, ok := strings.Cut(arg, ",")
+			if !ok {
+				log.Fatalf("size needs w,h: %q", step)
+			}
+			fw, _ := strconv.Atoi(w)
+			fh, _ := strconv.Atoi(h)
+			if err := session.Driver().Resize(fw, fh); err != nil {
+				log.Fatal(err)
+			}
+		case "type":
+			if err := session.Type(arg); err != nil {
+				log.Fatal(err)
+			}
 		case "keys":
 			if err := session.Keys(arg); err != nil {
 				log.Fatal(err)
@@ -79,6 +95,18 @@ func main() {
 				log.Fatalf("wait needs milliseconds: %q", step)
 			}
 			if err := session.Wait(time.Duration(ms) * time.Millisecond); err != nil {
+				log.Fatal(err)
+			}
+		case "key":
+			if err := session.Driver().Key(ui.KeyRight, 0); err != nil {
+				log.Fatal(err)
+			}
+		case "advance":
+			ms, err := strconv.Atoi(arg)
+			if err != nil {
+				log.Fatalf("advance needs milliseconds: %q", step)
+			}
+			if err := session.Driver().Advance(time.Duration(ms) * time.Millisecond); err != nil {
 				log.Fatal(err)
 			}
 		case "shot":

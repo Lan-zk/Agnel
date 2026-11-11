@@ -141,3 +141,30 @@ pick.Hit(openPicker, "选择书卷与章")
 ### 可复用改进方案
 1. `Pump()` 无条件重绘，或另提供 `driver.Redraw()`。
 2. `Snapshot()` 带上帧号，测试断言前可以确认拿到的是新帧，而不是靠“再 Pump 一次”。
+
+---
+
+## 9. 文字标签只有“框”，没有“落在哪里”：翻页这类形变无处表达
+
+### 现象与限制
+- 要做真实的书籍翻页，纸面必须按透视投影成梯形，纸上的字也必须跟着被压扁、倾斜；但 Viva v0.3.0 的文字标签只有 `Bounds`（一个轴对齐矩形），`app/painter.go` 的 `syncLabels` 把 `Text.Bounds` 原样交给后端，`viva_text_vertex` 用 `bounds.xy + corner*bounds.zw` 生成四边形。**标签能画在哪里只有一种答案：它自己的框。**
+- 图形侧同样受限：矩形与三角形都是轴对齐的（`viva_rectangle` 只带 `x/y/width/height` + 四个圆角），没有任意四边形。于是“倾斜的一个书页”只能用矩形裁剪 + 横向压缩近似，翻到侧面时是一根直边的窄条，没有透视、没有弧度。
+- 离屏渲染（`-tags vivahead`）与窗口渲染共用 `viva_encode_scene`，但离屏不经过 `reserved0` 打图层的回调路径，所以这类差异在截图验证里看不出来。
+
+### 框架根因（Viva v0.3.0）
+- 文字与位图共用一条管线（`platform.TextLabel` → `viva_text_label` → `viva_text_vertex`/`viva_text_fragment`），但顶点着色器把 `bounds` 当成唯一的几何来源，没有任何位置数组或变换入口。
+- 每帧的标签是否重发由 `app/painter.go` 的 `sameAsLastContent()` 决定；它比较 `Value/Style/Layer/Bounds/CellWidth/RunCount/Clip`，**不比较“画在哪里”**。一旦给标签补上形变字段，动画里文字和框都不变、只有形变在变，整个列表会被判定为“没变”，后端永远画第一帧的形变（本次实现中就撞上了：翻页时纸被压成窄条，字却一直摊在整页宽上）。
+- 窗口渲染时，`native.m` 会用 `vivaRectangleLayer(_callbackHandle, index)` 覆盖每个矩形的 `reserved0`（图层），而 `state.captureFrameLayers` 原先只在 `OnFocusLost / OnShortcut / OnScroll / OnFileDrop / OnRedraw` 以及无障碍动作里调用，`vivaPointerEvent`、`deliverKey`、`vivaViewResized` 都没有。**只要一帧改变了矩形数量（打开卡片、点击按钮），上传的图层就是上一次的快照**，图元被排到错误的图层上——这正是第 7 条“窗口里没有像素、离屏却有”的根因。
+
+### 已做的改动（本地 viva 检出，`app/go.mod` 用 `replace` 指过去）
+1. `ui.Quad{Points [4]Point; Tint [4]Color}` 与 `ui.Text.Quad/Tint/HasQuad`：一个标签可以声明“画在这个四边形里，每个角一个颜色”。
+2. `canvas.LabelQuad(value, bounds, quad, style)` / `LabelQuadAligned(...)`：`Bounds` 仍决定光栅化的位图大小（文字依旧按原尺寸清晰光栅化），`Quad` 决定这张位图落在屏幕上的哪四个点。
+3. `canvas.FillQuad(quad)`：任意四边形的填充，用两个 `Shaded` 三角形实现，角点颜色线性插值，因此纸面明暗、卷曲高光、投影都可以是一个四边形。
+4. 后端：`viva_text_label` 追加 `float quad[8]; float tint[16];`（160 → 256 字节），`viva_text_vertex` 按双线性插值取角点、按 `tint` 调色；四边形全零时退回原来的框。
+5. `sameAsLastContent()` 增加 `HasQuad/Quad/Tint` 比较，并补了 `TestRepaintPublishesAQuadThatMovesWithoutTheText`（先证明没有这行比较时测试失败）。
+6. `presentFrame()` 统一先 `state.captureFrameLayers(frame, nil)`，删掉原来只挂在无障碍路径上的那次捕获。
+
+### 可复用改进方案
+1. 把这个能力推到框架正式 API：`Quad` 之上再给一层 `Transform`（平移/旋转/透视），应用不必自己算四个角。
+2. 补齐“窗口像素 vs 离屏像素”的一致性测试：第 7 条与这次的图层 bug 都只能在真窗口里暴露，框架目前没有任何自动化手段覆盖它。
+3. 把 `sameAsLastContent()` 的字段表改成“结构性比较”（例如对标签做一次哈希），避免以后新增字段时又漏一个。

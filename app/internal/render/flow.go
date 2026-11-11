@@ -73,17 +73,42 @@ func (p Paragraph) LastRowWidth() float32 {
 
 // Paint draws the paragraph with its top-left corner at x, y.
 func (p Paragraph) Paint(c *ui.Canvas, x, y float32, s LineStyle) {
+	p.PaintWarped(c, x, y, s, nil)
+}
+
+// Warp places a box laid out on a page into the shape that page takes on
+// screen. The reader gives it the lifted leaf of a page turn: its Quad maps the
+// row's box to a quadrilateral, and reports false when the box has folded away
+// and should not be drawn at all.
+type Warp interface {
+	Quad(box ui.Rect) (ui.Quad, bool)
+}
+
+// PaintWarped paints the paragraph through warp. With a nil warp it is Paint:
+// the platform still rasterises each row itself, warp only moves and shades it,
+// so a line drawn this way stays as crisp as one drawn flat.
+func (p Paragraph) PaintWarped(c *ui.Canvas, x, y float32, s LineStyle, warp Warp) {
 	style := s.text()
 	for i, r := range p.Rows {
 		if r.Text == "" {
 			continue
 		}
-		c.Label(r.Text, ui.Rect{
+		box := ui.Rect{
 			X:      x + r.Offset,
 			Y:      y + float32(i)*s.Lead,
 			Width:  r.Width + 2,
 			Height: s.Lead,
-		}, style)
+		}
+		if warp == nil {
+			c.Label(r.Text, box, style)
+			continue
+		}
+		quad, ok := warp.Quad(box)
+
+		if !ok {
+			continue
+		}
+		c.LabelQuad(r.Text, box, quad, style)
 	}
 }
 

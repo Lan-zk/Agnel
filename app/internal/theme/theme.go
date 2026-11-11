@@ -38,8 +38,12 @@ var (
 	PaperRule   = ui.RGB24(0xd8d2c5)
 	PaperAcc    = ui.RGB24(0x1a6560)
 	PaperMark   = ui.RGB24(0xd3e2de)
-	PaperHover  = ui.RGBA(26, 101, 96, 0.10)
-	PaperShade  = ui.RGBA(18, 22, 20, 0.14)
+	// The two saved-word marks: a light wash for a new word, a deeper one for a
+	// word being learned. A mastered word is left unmarked, like ordinary text.
+	PaperMarkNew      = ui.RGBA(0xc2, 0x96, 0x3c, 0.14)
+	PaperMarkLearning = ui.RGBA(0xbe, 0x8a, 0x2e, 0.36)
+	PaperHover        = ui.RGBA(26, 101, 96, 0.10)
+	PaperShade        = ui.RGBA(18, 22, 20, 0.14)
 
 	Ribbon     = ui.RGB24(0x9e3b33)
 	RibbonDark = ui.RGB24(0x7a2a23)

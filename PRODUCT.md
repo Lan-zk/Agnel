@@ -4,11 +4,12 @@
 
 ## Platform
 
-web
+macOS desktop
 
 ## Stack
 
-static HTML/CSS/JS — 每个原型方案拆分为 `index.html` + `styles.css` + `app.js`，无构建步骤、无外部依赖，双击即可在浏览器打开。（用户在方案交付形式上明确选择"每个方案拆成 index.html + css + js"。）
+Go + [Viva](https://vivaui.dev)：GPU 直接绘制，无 WebView；经文与词典 `//go:embed` 离线内嵌；
+用户状态写在 `~/Library/Application Support/bible-en-study/`。
 
 ## Users
 
@@ -73,7 +74,7 @@ static HTML/CSS/JS — 每个原型方案拆分为 `index.html` + `styles.css` +
 
 - `design/产品概要说明书.md` — V0.1 产品概念版说明书，是产品事实的唯一权威来源。
 - `refer/` 下 5 个参考项目的真实前端实现（LinguaCafe、TypeWords、lute-v3、qwerty-learner、read-frog），可借鉴交互模式，不能整体复刻。
-- 真实圣经经文数据尚未接入；原型中的一切经文、词典条目、发音、音频与统计数字都是合成的演示数据，必须被明确识别为演示数据，不得当作真实数据呈现。
+- HTML 原型已删除，界面以 `app/` 的原生实现为准；经文与词典条目全部来自 `data/`，不是演示数据。
 
 ## Product Principles
 

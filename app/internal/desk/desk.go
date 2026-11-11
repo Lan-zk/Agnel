@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
@@ -16,10 +15,19 @@ import (
 	"app/internal/render"
 	"app/internal/store"
 	"app/internal/theme"
+	"app/internal/vocab"
 
 	"github.com/vivaui/viva/app"
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
+)
+
+// pane is the module on screen: the reader, or the word bank.
+type pane int
+
+const (
+	paneReader pane = iota
+	paneBank
 )
 
 // Mode is how many translations the reader opens at once.
@@ -40,10 +48,29 @@ const (
 	deskPad    = 44
 	pageMargin = 54
 	measureMax = 472
-	deskFoot   = 38
+	// The strip below the book carries the position and keeps the turn
+	// controls clear of the page.
+	deskFoot = 38
+)
 
-	// turnDuration is how long a page takes to settle into place.
-	turnDuration = 320 * time.Millisecond
+// titlebarH is the strip the window's traffic lights sit in: close to the
+// system's own 28, deep enough that the lights and the imprint share one line.
+const titlebarH float32 = 32
+
+// The page turn: one sheet lifts from the outer fore-edge, rolls over a
+// travelling curl and settles on the opposite page. These are the numbers that
+// decide how that sheet looks on the way across.
+const (
+	turnDuration = 680 * time.Millisecond // one full turn
+
+	turnRadius float32 = 0.15 // curl cylinder radius, as a fraction of the page width
+	turnLift   float32 = 115  // peak height of the curl toward the reader, in px
+	turnEye    float32 = 3600 // viewer distance for the perspective divide, in px
+	turnBend   float32 = 1.8  // width of the front face's bend, in multiples of the radius
+	turnCurl   float32 = 2.2  // width of the rolled back face's curl, in multiples of the radius
+	turnArch   float32 = 6.5  // upward arch of the sheet's edges, in px
+
+	turnStrips = 20 // vertical strips the curved paper is drawn in
 )
 
 // Identities are declared once: a control's identity must be stable from frame
@@ -57,6 +84,26 @@ var (
 	nextPage = tree.ID(read, "next")
 	offWord  = tree.ID(read, "close-card")
 	pageArea = tree.ID(read, "page")
+
+	bankID    = tree.Feature("bank")
+	bankRows  = tree.Sub(bankID, tree.Name("row"))
+	bankChips = tree.Sub(bankID, tree.Name("filter"))
+	bankWords = tree.Sub(bankID, tree.Name("context"))
+	bankFound = tree.Sub(bankID, tree.Name("empty"))
+	bankList  = tree.ID(bankID, "list")
+	bankPane  = tree.ID(bankID, "detail")
+	bankClose = tree.ID(bankID, "close-detail")
+	bankAdd   = tree.ID(bankID, "add")
+	bankStage = tree.Sub(bankID, tree.Name("stage"))
+	bankDlg   = tree.Sub(bankID, tree.Name("dialog"))
+	dlgCancel = tree.ID(bankID, "dlg-cancel")
+	dlgDelete = tree.ID(bankID, "dlg-delete")
+	dlgClose  = tree.ID(bankID, "dlg-close")
+
+	railID    = tree.Feature("rail")
+	cardSave  = tree.ID(read, "save-word")
+	cardLemma = tree.ID(read, "card-lemma")
+	cardBank  = tree.ID(read, "card-bank")
 
 	pickerID  = tree.Feature("picker")
 	doClose   = tree.ID(pickerID, "close")
@@ -108,6 +155,7 @@ type block struct {
 }
 
 type page struct {
+	folio  int
 	blocks []block
 }
 
@@ -133,7 +181,33 @@ type State struct {
 
 	bookmarks []store.Bookmark
 	recent    []string
-	saved     []string
+
+	// The word bank shares the window with the reader: one module rail, one
+	// page below it.
+	pane        pane
+	vocab       *vocab.File
+	vocabBroken bool
+	landVerse   int
+
+	filter   int
+	selected string
+	bankPg   int
+	// landWord is the word to open on the page the bank just sent the reader
+	// to; it is consumed by the first painted page that contains it.
+	landWord      string
+	landWordVerse int
+	vocabIndex    map[string]vocab.Word
+	// dictMode shows the whole dictionary instead of the saved words.
+	dictMode      bool
+	dictPg        int
+	dictLetter    int
+	dictCache     map[string]dict.Entry
+	letterAt      []int
+	adding        bool
+	confirmDelete string
+	query         flex.Field
+	addWord       flex.Field
+	addZh         flex.Field
 
 	leftIdx, rightIdx int
 	leftSel, rightSel flex.SelectState
@@ -157,6 +231,13 @@ type State struct {
 	turning   bool
 	turnDir   int
 	turnBegan time.Duration
+	turnFrom  *page
+	turnBook  bible.Book
+	turnChL   bible.Chapter
+	turnChR   bible.Chapter
+	// warp is set only while the lifted sheet of a turn is being painted: every
+	// page box then goes through its projection instead of landing square.
+	warp *leafWarp
 
 	// frameMode is the mode this frame is drawn in: a control that changes the
 	// mode takes effect on the next frame, never halfway through one.
@@ -205,6 +286,13 @@ func Run(icon app.WindowIcon) {
 	}
 }
 
+// clearColor is the window's unpainted colour: the surface the app's own bars
+// sit on, so the window edge, the titlebar and the masthead read as one.
+func clearColor() app.Color {
+	bg := theme.Bg
+	return app.Color{Red: float64(bg.Red), Green: float64(bg.Green), Blue: float64(bg.Blue), Alpha: 1}
+}
+
 func Config(m *State) app.Config {
 	m.data = loaded
 	if m.osis == "" {
@@ -214,15 +302,29 @@ func Config(m *State) app.Config {
 		m.chapter = 1
 	}
 	m.pickDefaults()
+	m.loadVocab()
 	return app.Config{
-		Title:      "Agnel",
-		Width:      1440,
-		Height:     900,
-		MinWidth:   980,
-		MinHeight:  640,
-		ClearColor: app.Color{Red: 0.87, Green: 0.89, Blue: 0.90, Alpha: 1},
-		Paint:      m.paint,
-		OnKey:      m.onKey,
+		Title:          "Agnel",
+		WindowMode:     app.WindowCustomTitlebar,
+		TitlebarHeight: titlebarH,
+		Width:          1440,
+		Height:         900,
+		MinWidth:       980,
+		MinHeight:      640,
+		ClearColor:     clearColor(),
+		Paint:          m.paint,
+		OnKey:          m.onKey,
+		OnPointer:      m.onPointer,
+		TextInput:      flex.Fields(&m.query, &m.addWord, &m.addZh),
+		OnScroll: func(e ui.ScrollEvent) ui.EventResult {
+			if m.leftSel.Open {
+				return m.leftSel.Wheel(e)
+			}
+			if m.rightSel.Open {
+				return m.rightSel.Wheel(e)
+			}
+			return m.view.Wheel(e)
+		},
 	}
 }
 
@@ -262,7 +364,6 @@ func (m *State) restore() {
 	}
 	m.bookmarks = st.Bookmarks
 	m.recent = st.Recent
-	m.saved = st.Saved
 	m.pickDefaults()
 }
 
@@ -423,39 +524,60 @@ func (m *State) paint(canvas *ui.Canvas, size ui.Size) {
 	f := m.view.Begin(canvas, m.theme(), ui.Rect{Width: size.Width, Height: size.Height})
 	var deskSlot flex.Box
 	pickerAtStart := m.picker
+	paneAtStart := m.pane
 
-	if m.picker {
-		m.pickerPage(f)
-	} else {
-		f.Column().Fill().Children(func() {
+	f.Column().Fill().Children(func() {
+		m.chrome(f)
+		if m.picker {
+			m.pickerPage(f)
+			return
+		}
+		if m.pane == paneBank {
+			m.barBank(f)
+		} else {
 			m.bar(f)
-			f.Divider()
-			f.Row().Grow(1).PadSides(10, deskPad, deskFoot, deskPad).Children(func() {
-				deskSlot = f.Slot().Grow(1)
-			})
+		}
+		f.Divider()
+		f.Row().Grow(1).Children(func() {
+			m.rail(f)
+			f.Column().Width(1).Background(theme.RuleSoft)
+			if m.pane == paneBank {
+				m.bankPage(f)
+			} else {
+				f.Row().Grow(1).PadSides(10, deskPad, deskFoot, deskPad).Children(func() {
+					deskSlot = f.Slot().Grow(1)
+				})
+			}
 		})
-	}
+	})
 
+	if m.confirmDelete != "" && !m.picker {
+		m.deleteDialog(f)
+	}
 	if m.picker {
 		canvas.SetEscapeTarget(doClose)
 	}
 	if m.lookup != nil {
-		// A scrim declared before the card: any click outside it closes the card,
-		// while the card's own controls (declared after) still win.
-		canvas.Hit(offWord, ui.Rect{Width: size.Width, Height: size.Height})
-		if canvas.Clicked(offWord) {
-			m.lookup = nil
-			m.dirty = true
-		}
-		if m.lookup != nil {
-			canvas.SetEscapeTarget(offWord)
-			f.PopupLayer(1)
-			m.lookupCard(f)
-		}
+		// The card floats above everything, including the page it was opened
+		// from. Clicks outside it are caught in onPointer against the rect the
+		// card was last laid out in, so dismissing does not depend on hit
+		// declaration order (the page and its words are declared later).
+		canvas.SetEscapeTarget(offWord)
+		f.PopupLayer(1)
+		m.lookupCard(f)
 	}
 	f.End()
 
 	if pickerAtStart || m.picker {
+		if m.dirty {
+			m.dirty = false
+			canvas.RequestFrameIn(time.Millisecond)
+		}
+		return
+	}
+	// A pane change during this frame (a word taken back to its verse) is
+	// laid out next frame: this one has no reading page in it.
+	if paneAtStart != paneReader || m.pane != paneReader {
 		if m.dirty {
 			m.dirty = false
 			canvas.RequestFrameIn(time.Millisecond)
@@ -468,7 +590,7 @@ func (m *State) paint(canvas *ui.Canvas, size ui.Size) {
 	_ = m.recent
 
 	book, _ := m.data.Book(m.osis)
-	chL, okL := m.data.Chapter(m.left, m.osis, m.chapter)
+	chL, _ := m.data.Chapter(m.left, m.osis, m.chapter)
 	chR := chL
 	if m.frameMode == Spread {
 		chR, _ = m.data.Chapter(m.right, m.osis, m.chapter)
@@ -485,6 +607,13 @@ func (m *State) paint(canvas *ui.Canvas, size ui.Size) {
 		m.remember()
 	}
 	m.spread = min(m.spread, len(m.pages)-1)
+	if m.landVerse > 0 {
+		if i := m.pageOfVerse(m.landVerse); i >= 0 {
+			m.spread = i
+		}
+		m.landVerse = 0
+		m.remember()
+	}
 
 	area := pageL
 	if m.frameMode == Spread {
@@ -501,37 +630,24 @@ func (m *State) paint(canvas *ui.Canvas, size ui.Size) {
 	// declared after it so they sit in front of it.
 	canvas.HitWithOptions(pageArea, area, "正文", ui.HitOptions{Role: ui.RoleGroup, Autofocus: true})
 
-	// The turn: the place has already moved, the page slides the rest of the way.
+	// The turn: a physical leaf lifts from the outer fore-edge, crosses the
+	// spine at p=0.5, and settles onto the opposite page.
 	turn := float32(1)
 	if m.turning {
 		p := float32(m.now-m.turnBegan) / float32(turnDuration)
 		if p >= 1 {
 			m.turning = false
+			m.turnFrom = nil
 			p = 1
 		} else {
 			canvas.RequestFrame()
 		}
-		turn = easeOut(p)
+		turn = easeBookTurn(p)
 	}
 
 	pg := m.pages[m.spread]
-	from := m.spread - m.turnDir
-	if m.turning && m.turnDir != 0 && from >= 0 && from < len(m.pages) {
-		// The page underneath stays where it is. The arriving spread is laid
-		// over it from the outer edge, on a layer of its own: the paper of the
-		// arriving page then covers the words of the page below, which the
-		// text layer alone could never do.
-		canvas.Clip(desk)
-		m.paintSpread(canvas, pageL, pageR, book, chL, chR, m.pages[from], 0, false)
-		dx := turnSlide(desk, area) * (1 - turn)
-		if m.turnDir < 0 {
-			dx = -dx
-		}
-		m.paintTurnShadow(canvas, pageL, edgeR, dx, m.turnDir, turn)
-		canvas.PushLayer(1)
-		m.paintSpread(canvas, pageL, pageR, book, chL, chR, pg, dx, true)
-		canvas.PopLayer()
-		canvas.Unclip()
+	if m.turning && m.turnDir != 0 && m.turnFrom != nil {
+		m.paintBookTurn(canvas, desk, pageL, pageR, m.turnBook, m.turnChL, m.turnChR, book, chL, chR, *m.turnFrom, pg, turn)
 	} else {
 		m.paintSpread(canvas, pageL, pageR, book, chL, chR, pg, 0, true)
 	}
@@ -543,15 +659,17 @@ func (m *State) paint(canvas *ui.Canvas, size ui.Size) {
 		m.dirty = false
 		canvas.RequestFrameIn(time.Millisecond)
 	}
-	if !okL {
-		_ = okL
-	}
 }
 
-// easeOut is the curve a page follows as it settles into place.
-func easeOut(p float32) float32 {
-	q := 1 - p
-	return 1 - q*q*q
+// easeBookTurn shapes the turn's progress: the page lifts off slowly from the
+// fore-edge, crosses the spine at speed and settles softly onto the opposite
+// stack, so it reads as paper with weight rather than a sprite sliding across.
+func easeBookTurn(p float32) float32 {
+	p = clamp01(p)
+	if p < 0.5 {
+		return 4 * p * p * p
+	}
+	return 1 - float32(math.Pow(float64(-2*p+2), 3))/2
 }
 
 // turnSlide is how far the arriving spread travels: it comes in from the far
@@ -602,12 +720,28 @@ func (m *State) theme() ui.Theme {
 	return t
 }
 
+// chrome is the window's own titlebar: the strip the traffic lights sit in. It
+// carries the imprint and nothing else, and the whole strip drags the window
+// the way a system titlebar does. The imprint is centred because the lights
+// hold the leading corner: flush left, it would sit under them at the window's
+// narrowest width.
+func (m *State) chrome(f *flex.Frame) {
+	f.Row().Height(titlebarH).FillWidth().MovesWindow().Items(flex.Center).Children(func() {
+		f.Spacer()
+		f.Row().Items(flex.Center).Gap(6).Children(func() {
+			f.Image(logo.Bitmap()).Size(15, 15)
+			f.Text("Agnel").FontSize(12.5).Weight(ui.WeightMedium).Color(theme.InkSoft)
+		})
+		f.Spacer()
+	})
+	f.Row().Height(1).Background(theme.RuleSoft)
+}
+
 // bar is the masthead: what is being read, what it is being read in, and the
 // few controls that change the page.
 func (m *State) bar(f *flex.Frame) {
 	book, _ := m.data.Book(m.osis)
 	f.Row().Height(54).PadX(24).Items(flex.Center).Gap(10).Children(func() {
-		f.Image(logo.Bitmap()).Size(26, 26)
 		title := m.bookName(book) + " " + fmt.Sprint(m.chapter)
 		head := f.Row().Items(flex.Center).Gap(6).PadSides(5, 10, 5, 8).Radius(8).
 			HoverBackground(theme.Surface)
@@ -778,7 +912,21 @@ func (m *State) jumpTo(b store.Bookmark) {
 	m.remember()
 }
 
-// goSpread moves the place in the chapter and lets the page slide into place.
+func (m *State) captureTurnOrigin() {
+	if m.spread >= 0 && m.spread < len(m.pages) {
+		prev := m.pages[m.spread]
+		prev.folio = m.spread + 1
+		m.turnFrom = &prev
+		m.turnBook, _ = m.data.Book(m.osis)
+		m.turnChL, _ = m.data.Chapter(m.left, m.osis, m.chapter)
+		m.turnChR = m.turnChL
+		if m.frameMode == Spread {
+			m.turnChR, _ = m.data.Chapter(m.right, m.osis, m.chapter)
+		}
+	}
+}
+
+// goSpread moves the place in the chapter and lets the page turn across the spine.
 // Turning past either end of the chapter carries on into the chapter beside it,
 // so reading never stops at a chapter or a book boundary.
 func (m *State) goSpread(delta int) {
@@ -790,6 +938,7 @@ func (m *State) goSpread(delta int) {
 	if next == m.spread {
 		return
 	}
+	m.captureTurnOrigin()
 	m.spread = next
 	m.turning = true
 	m.turnDir = delta
@@ -880,9 +1029,15 @@ func (m *State) goChapter(delta int) {
 	if !ok {
 		return
 	}
+	m.captureTurnOrigin()
 	m.osis = book
 	m.openChapter(chapter)
 	m.landLast = delta < 0
+	if m.turnFrom != nil {
+		m.turning = true
+		m.turnDir = delta
+		m.turnBegan = m.now
+	}
 }
 
 func (m *State) openChapter(c int) {
@@ -901,6 +1056,7 @@ func (m *State) openChapter(c int) {
 func (m *State) openPicker(book string) {
 	m.picker = true
 	m.pickerBook = book
+	m.lookup = nil
 	m.dirty = true
 }
 
@@ -917,6 +1073,37 @@ func (m *State) noteVisit() {
 
 func (m *State) onKey(e ui.KeyEvent) ui.EventResult {
 	if e.Release {
+		return ui.EventResult{}
+	}
+	if m.pane == paneBank {
+		// The reader keeps its page while the word bank is open.
+		switch e.Key {
+		case ui.KeyEscape:
+			if m.adding {
+				m.adding = false
+				return ui.EventResult{Repaint: true}
+			}
+			if m.selected != "" {
+				m.selected = ""
+				return ui.EventResult{Repaint: true}
+			}
+		case ui.KeyUp, ui.KeyLeft:
+			if m.stepBankSelection(-1) {
+				return ui.EventResult{Repaint: true}
+			}
+		case ui.KeyDown, ui.KeyRight:
+			if m.stepBankSelection(1) {
+				return ui.EventResult{Repaint: true}
+			}
+		case ui.KeyPageUp:
+			if m.stepBankPage(-1) {
+				return ui.EventResult{Repaint: true}
+			}
+		case ui.KeyPageDown:
+			if m.stepBankPage(1) {
+				return ui.EventResult{Repaint: true}
+			}
+		}
 		return ui.EventResult{}
 	}
 	if m.picker {
@@ -950,10 +1137,12 @@ func (m *State) onKey(e ui.KeyEvent) ui.EventResult {
 }
 
 func (m *State) onPointer(e ui.PointerEvent) ui.EventResult {
-	if m.lookup == nil {
+	if m.lookup == nil || e.Kind != ui.PointerDown {
 		return ui.EventResult{}
 	}
-	if e.Kind != ui.PointerDown {
+	if m.cardRect.Width <= 0 {
+		// The card has not been laid out yet this run; do not treat every click
+		// as outside of it.
 		return ui.EventResult{}
 	}
 	if e.X < m.cardRect.X || e.X > m.cardRect.X+m.cardRect.Width ||
@@ -1072,14 +1261,8 @@ func (m *State) remember() {
 	_ = store.Save(store.State{
 		Book: m.osis, Chapter: m.chapter, Spread: m.spread, Mode: int(m.mode),
 		Lang: m.lang, Left: m.left, Right: m.right,
-		Bookmarks: m.bookmarks, Recent: m.recent, Saved: sorted(m.saved),
+		Bookmarks: m.bookmarks, Recent: m.recent,
 	})
-}
-
-func sorted(in []string) []string {
-	out := append([]string(nil), in...)
-	sort.Strings(out)
-	return out
 }
 
 func firstRune(s string) string {

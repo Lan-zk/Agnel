@@ -88,6 +88,10 @@ func Load() error {
 // Words is the number of headwords, for the about line.
 func Words() int { return len(data.Words) }
 
+// Headwords is every entry word, in alphabetical order. The slice is the loaded
+// index's own: read it, do not change or keep it.
+func Headwords() []string { return data.Words }
+
 // Lookup finds the entry for a word as it appears in the text: exact, then
 // lowercased, then through the inflected-form index. An inflected form is
 // returned as the entry it belongs to, with Lemma set to that entry's word.

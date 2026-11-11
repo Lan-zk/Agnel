@@ -6,14 +6,15 @@ GPU 直接绘制，无 WebView；经文和词典离线内嵌，运行时不联�
 
 ## 现在能做什么
 
-当前真正可运行的是阅读器：
+现在能用的是阅读器与生词本：
 
 - 左右对照：左页 BSB / WEBP / KJV 任选，右页和合本，逐节对齐；也可单栏。
 - 66 卷分卷选章，中文 / English 卷名切换；书签、键盘翻页、记住上次位置。
 - 点词查卡：词性、音标、中文义、英文释义、本书搭配、词形变化、出处与原句。
 - 词典 41,873 条 / 10,113 forms，覆盖三译本 99.6% 的词次；没收录的词会明说「还没有收录」。
-
-词库、练习、英语基础仍是 `design/` 里的 HTML 原型，尚未进入原生应用。
+- 生词本：查词卡收藏、三栏词库（筛选 / 列表 / 详情）、三个阶段、错词计数、按词 / 中文 / 原句搜索、
+  手动添加、从原句跳回经文；词库还能切到「全部词典」，41,873 条按字母排序，可按首字母跳转、按前缀
+  搜索、直接收藏。练习与英语基础还没有页面。
 
 ## 跑起来
 
@@ -45,14 +46,14 @@ go run -tags vivahead ./cmd/shot /tmp/a.png "locate:beginning" "shot:/tmp/c.png"
 
 | 路径 | 内容 |
 |---|---|
-| `app/` | Go + Viva 应用；`internal/desk` 阅读器，`internal/dict` 词典，`internal/bible` 经文 |
+| `app/` | Go + Viva 应用；`internal/desk` 阅读器与词库，`internal/vocab` 生词本，`internal/dict` 词典，`internal/bible` 经文 |
 | `data/` | SQLite 经文库、词典构建源与报告；数据说明见 `data/README.md` |
 | `scripts/` | 下载、USFM 解析、建库、校验、字体子集化（Python 标准库） |
-| `design/` | HTML 原型与设计说明 |
+| `design/` | 产品概要说明书与设计资料（HTML 原型已删除） |
 | `refer/` | 参考项目，只借鉴交互，不复制代码 |
 
 运行时只读 `//go:embed` 进二进制的 `app/internal/bible/store.bin`、`app/internal/dict/dict.bin`，
-以及用户目录下的 `state.json`（`~/Library/Application Support/bible-en-study/`）。
+以及用户目录下的 `state.json` 与 `vocab.json`（`~/Library/Application Support/bible-en-study/`）。
 不联网、不读 SQLite、不写数据库。
 
 ## 数据与重建

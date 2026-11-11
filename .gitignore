@@ -20,3 +20,6 @@ data/lex/*.dict
 data/lex/*.js
 data/lex/*.txt
 data/lex/package/
+
+# Local scratch: Go build caches, throwaway checkouts
+.work/

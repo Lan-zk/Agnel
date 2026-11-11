@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"app/internal/bible"
-	"app/internal/logo"
 	"app/internal/theme"
 
 	"github.com/vivaui/viva/flex"
@@ -32,7 +31,6 @@ func (m *State) barPicker(f *flex.Frame) {
 			m.dirty = true
 		}
 		m.barRule(f)
-		f.Image(logo.Bitmap()).Size(24, 24)
 		f.Text("选择经文").FontSize(18.5).Weight(ui.WeightSemibold).Color(theme.Ink)
 		f.Text(m.pickerScope()).FontSize(theme.SizeMicro).Color(theme.InkFaint).
 			PadSides(3, 8, 3, 8).Radius(5).Background(theme.Surface2)

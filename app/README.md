@@ -1,10 +1,11 @@
 # 圣经英语 · 原生阅读器
 
-`design/05-sidebar-rail-grot-text` 的原生版，Go + [Viva](https://vivaui.dev)：窗口由 GPU 直接绘制，
+Go + [Viva](https://vivaui.dev) 原生桌面应用：窗口由 GPU 直接绘制，
 没有 WebView，也没有打包浏览器。经文与译本全部离线内嵌，不联网。
 
 数据来自 `data/db/bible-en-study.db`：66 卷、1189 章，三个公有领域英译本
 （BSB / WEBP / KJV）加和合本（CUV，简体）。右页固定和合本，左页可换英文译本。
+左侧 68px 模块轨在阅读与词库之间切换；词库是本机的生词本，不联网。
 
 ## 跑
 
@@ -43,13 +44,14 @@ viva package -target darwin -format app,zip          # 顺带出分发包
 墨绿的字母 A，字怀镂出一只低头的羊与一本摊开的书；两色，`#668B60` 与 `#FCF7F5`。
 
 - 素材是用户给的矢量图 `app/assets/logo.svg`（`viewBox 0 0 1095 1095`，两个 `path`：纸色方底 + 绿色字标），
-  `data/logo/logo.svg` 与 HTML 原型 `design/05-sidebar-rail-grot-text/logo.svg` 是同一份。
-- 应用里：顶栏用 `f.Image(logo.Bitmap()).Size(28, 28)` 画 `internal/logo/mark.png`（256²，透明背景，
+  `data/logo/logo.svg` 是同一个矢量源的存档。
+- 应用里：窗口标题条中线用 `f.Image(logo.Bitmap()).Size(15, 15)` 画 `internal/logo/mark.png`（256²，透明背景，
   只有绿色字标；矢量源是 `app/assets/logo-mark.svg`；`mark.png` 用 `//go:embed` 编进二进制）。
   为什么用位图：这台机器上 `canvas.DrawPath`、`canvas.DrawBitmap` 以及 `viva icons` 编出的 `ui.Icon`
   都画不出东西（`DrawPath` 甚至会让窗口根本不出现），只有 flex 的 `Image` 稳定。
   界面里的翻页箭头、下拉提示因此也不用图标，而是字体里的 `‹` `›` `▾` 三个字形；
-  根因与改进建议见 `docs/viva-framework-issues.md` §7。
+  根因与改进建议见 `docs/viva-framework-issues.md` §7（窗口里三角形不落像素的根因已经定位：
+  矩形图层快照只在部分事件路径里刷新，现已改为每帧刷新；`DrawPath` 没有回头再验证，图标仍用位图与字形）。
 - 应用图标：`app/assets/icon.png`（1024²，纸色方底 + 绿色字标）→ `sips` + `iconutil` 出
   `Contents/Resources/AppIcon.icns`，打进 `build/Agnel.app`；`viva.toml` 的 `[app] icon` 也指向它，
   `viva package` 会用同一张。同一张图还被 `app/assets/icon.go` 用 `//go:embed` 编进程序，
@@ -83,8 +85,9 @@ go run -tags vivahead ./cmd/shot /tmp/a.png "label:全部书卷" "shot:/tmp/b.pn
 go run -tags vivahead ./cmd/shot /tmp/a.png "click:547,189" "shot:/tmp/c.png"
 ```
 
-步骤：`click:x,y`、`label:文字`、`locate:文字`、`keys:spec`、`shot:路径`。`locate` 只认有角色的控件，
-经文里的单词要用 `click:x,y`。
+步骤：`click:x,y`、`label:文字`、`locate:文字`、`type:文字`、`size:w,h`、`keys:spec`、`shot:路径`。
+`locate` 只认有角色的控件，经文里的单词要用 `click:x,y`。`type` 往当前输入框打字（先用 `label:` 点它），
+`size` 改窗口大小，方便看 980×640 下的布局。
 
 `docs/spread.png` 左英右中对照、`docs/lookup.png` 点词后的词条卡、`docs/picker.png` 分卷页、
 `docs/picker-en.png` 分卷页英文态、`docs/chapters.png` 诗篇 150 章。
@@ -99,15 +102,30 @@ go run -tags vivahead ./cmd/shot /tmp/a.png "click:547,189" "shot:/tmp/c.png"
 - **选择经文**：66 卷按 律法书 / 历史书 / 诗歌智慧书 / 大先知书 / 小先知书 / 福音书 /
   使徒行传 / 保罗书信 / 普通书信 / 启示录 分组；每卷标章数，多章进一层选章；顶栏 中文 / English
   切换卷名（与阅读页标题、左栏同步），选择记在 state.json。
-- **翻页**：书页两侧边缘各一个箭头，不占正文宽度。翻到章末继续往前就进下一章的第一对开，
+- **翻页**：书页两侧边缘各一个箭头，不占正文宽度；翻页围绕中央书脊（单栏绕左侧书脊）进行两阶段纸页掀起、背页卷弧高光与落页阴影仿真（`680ms` S 型加减速，支持章内与跨章/跨卷翻页）。翻到章末继续往前就进下一章的第一对开，
   在章首往回翻落到上一章的最后一对开，同理跨卷；到正典首尾才停。箭头的标签随位置变化
   （下一页 / 下一章 / 下一卷）。
 - **键盘**：← → 翻页，空格同 →，Home / End 到头尾，Esc 关词条卡。
 - **书签**：标记当前对开，页上缘挂书签带，左栏列出「卷 章:节」，点击跳回（按节重新定位）。
 - **记住位置**：卷、章、页、模式、左右译本、语言、书签写在
-  `~/Library/Application Support/bible-en-study/state.json`，下次打开回到原处。
+  `~/Library/Application Support/bible-en-study/state.json`，下次打开回到原处；生词本单独写在同目录的
+  `vocab.json`，所以翻页的频繁写入不会碰词库文件。
 - **查词**：点正文里的词弹卡片（词性、音标、中文义、英文释义、本书搭配、词形变化、出处与原句——
-  对照模式下中英两句都给）；词典 41,873 条，没收录的词会明说「还没有收录」。
+  对照模式下中英两句都给）；词典 41,873 条，没收录的词会明说「还没有收录」。若点击的是屈折变形词，
+  可直接点按「原形」跳转查看原形词卡；卡片底部可以收藏，已收藏的词还能一键「在词库查看」。
+- **页上标记**：收藏过的词在正文里有淡底纹——生词最浅，学习中最深，已掌握不画，读起来和正文一样。
+- **词库**：左侧模块轨切进来。一行身份栏（`词库` + 收录总数、搜索框、`我的词 / 全部词典`、`手动添加`），
+  一行阶段筛选（`全部 / 生词 / 学习中 / 已掌握 / 错词`，筛选与卡片用同一个圆点说同一种阶段），
+  主区是分页词卡墙（每页 12 张，词头、词性、音标、中文义与首条经文出处），底部页码条与 `PgUp` / `PgDn`；
+  摘要行写「N 张词卡 · 按加入时间 · 已掌握 x / y」。点按词卡在右侧展开抽屉：词头、音标、阶段（圆点 + 文字两段式）、
+  中英释义、本书搭配、收藏时那几节的中英原句与「回到原文」、底部「移出词库」；「收起」或 `Esc` 关抽屉，
+  `↑↓` / `←→` 跨页切词卡。「回到原文」跳回那一节并把卡片开在原处。「手动添加」在同一个抽屉里填单词与可选中文释义，
+  词典收录的词自动补齐音标与英译，没收录的在详情里写明。
+- **空词库**：不摆一张空墙。居中的引导卡说明词怎么进来，给「去阅读」「手动添加一个词」，下面一行「浏览全部词典 ›」；
+  此时筛选条收起。搜索或筛选没有结果时，卡片给出「查看全部词 / 清空搜索」。
+- **全部词典**：词库顶栏切「我的词 / 全部词典」。顶部是 `全部` + `A–Z` 字母横栏，
+  搜索框按词头前缀找（找不到前缀时退回子串，最多 200 条）；主区每页 24 张词卡展示内嵌的 41,873 条词条，
+  点按词卡在右侧抽屉查看详情并直接收进我的词库。
 
 ## 词典
 
@@ -142,10 +160,10 @@ zlib(索引 JSON) | 负载`。索引含词表、屈折表（form → lemma）与
 
 ## 还没做
 
-中文译本（数据里没有，要用和合本得另进一批数据）、词库、练习、英语基础、全文搜索、
+中文译本（数据里没有，要用和合本得另进一批数据）、练习、英语基础、全文搜索、
 脚注与串珠（库里没有注释表）。
 
-## 五个动手前必须知道的约束
+## 七个动手前必须知道的约束
 
 1. **窗口必须用 `app.RunCanvas(config, &canvas)`**，不能用 `app.Run(config)`。后者在这台机器上
    会开出一个有标题、有背景色、但 `Paint` 一次都不调用的空窗口（排查：最小窗口探针 + 官方模板对照，
@@ -160,3 +178,12 @@ zlib(索引 JSON) | 负载`。索引含词表、屈折表（form → lemma）与
 4. **`LineHeight(1.5)` 是 1.5 像素**，不是倍数。要 1.5 倍行距得自己算像素，或干脆不设。
 5. **`f.Slot()` 不给尺寸就是 0**；在 Row 里要 `.Grow(1)`，在 `Items(Center)` 的行里还要 `.Height(…)`。
    另外点击是「后声明的在前」：先声明整页的 `pageArea`，再声明每个词，词才点得到。
+6. **窗口顶条由应用自己画**。`Config` 用 `app.WindowCustomTitlebar`，`TitlebarHeight: titlebarH`（32px），
+   `paint` 的第一行是 `m.chrome(f)`：整条是拖动区（`MovesWindow`），中线是 `mark.png` + `Agnel` 字标。
+   macOS 的红绿灯占住左侧 `app.TitlebarInsets()`（70px），顶上这一条的内容都要让开它；
+   `ClearColor` 取自 `theme.Bg`，否则窗口边缘、标题条与页头会是三种颜色。`dev` 宿主窗口也从
+   `reloadwire` 里拿到 `WindowMode` 与 `TitlebarHeight`，所以 `viva dev` 与打包后的窗口一致。
+7. **形变要用本地 viva**。`app/go.mod` 里有 `replace github.com/vivaui/viva => ../../viva`：翻页的透视纸面
+   靠 `ui.Canvas.FillQuad` 与 `ui.Canvas.LabelQuad`（任意四边形 + 每角颜色），这两个入口只在本地 viva
+   检出里有，发布版 `v0.3.0` 上没有；`../../viva` 不在时 `app` 编不过。改动与根因见
+   `docs/viva-framework-issues.md` §9。
